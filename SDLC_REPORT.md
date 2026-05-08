@@ -388,7 +388,7 @@ The Pose Correction project is progressing well through its SDLC phases. The pro
 
 **Document Version**: 1.0  
 **Last Updated**: May 8, 2026  
-**Prepared By**: Yuva Deep Sai & Hitesh D.  
+**Prepared By**: Yuvadeep & Hitesh D.  
 **Institution**: Amrita Vishwa Vidyapeetham
 
 ---
