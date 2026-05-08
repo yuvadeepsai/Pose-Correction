@@ -23,8 +23,8 @@ This report documents the Software Development Life Cycle (SDLC) of the **Pose C
 - **Primary Language**: Jupyter Notebook (68.1%), HTML (31.9%)
 
 ### 1.2 Team Members
-- **Lead Developer**: Yuva Deep Sai (yuvadeepsai)
-- **Co-Developer**: Hitesh D.
+- **Lead Developer**: Yuvadeep (yuvadeepsai)
+- **Co-Developer**: Hitesh D
 
 ### 1.3 Project Objectives
 - Develop an intelligent system to identify incorrect human postures
@@ -122,7 +122,7 @@ The project is based on research in:
 ### 4.1 System Design
 **Module-based Architecture:**
 1. **Data Processing Module**
-   - Input image/video preprocessing
+   - Input Live Stream preprocessing
    - Data normalization and augmentation
 
 2. **Pose Detection Module**
@@ -135,7 +135,6 @@ The project is based on research in:
    - Feedback generation
 
 4. **Visualization Module**
-   - Graph and chart generation
    - Interactive HTML dashboards
    - Real-time visualization
 
@@ -146,8 +145,8 @@ Analysis → Feedback Generation → Visualization
 ```
 
 ### 4.3 Database/Data Structure Design
-- Input data: Images in PNG/JPG format
-- Intermediate data: Keypoint coordinates (JSON)
+- Input data: Video Stream
+- Intermediate data: Keypoint coordinates 
 - Output data: Analysis results, feedback, visualizations
 
 ---
@@ -201,16 +200,7 @@ Analysis → Feedback Generation → Visualization
 - Performance testing
 - Scalability testing
 
-### 6.2 Test Cases
-| Test ID | Description | Expected Result | Status |
-|---------|-------------|-----------------|--------|
-| TC_001 | Load and preprocess image | Image correctly resized and normalized | Pending |
-| TC_002 | Pose detection accuracy | Keypoints detected with >90% accuracy | Pending |
-| TC_003 | Posture classification | Correct classification of poses | Pending |
-| TC_004 | Feedback generation | Meaningful feedback provided | Pending |
-| TC_005 | Performance benchmark | Processing time < 1s per image | Pending |
-
-### 6.3 Quality Metrics
+### 6.2 Quality Metrics
 - Code Coverage: Target >80%
 - Accuracy: >90% for pose detection
 - Precision & Recall: >85% each
@@ -334,10 +324,8 @@ The Pose Correction project is progressing well through its SDLC phases. The pro
 
 ## Appendix A: References
 
-1. Cao, Z., et al. (2017). "OpenPose: Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields"
-2. He, K., et al. (2016). "Deep Residual Learning for Image Recognition"
-3. OpenCV Documentation: https://docs.opencv.org/
-4. TensorFlow Documentation: https://www.tensorflow.org/
+1. OpenCV Documentation: https://docs.opencv.org/
+2. TensorFlow Documentation: https://www.tensorflow.org/
 
 ---
 
