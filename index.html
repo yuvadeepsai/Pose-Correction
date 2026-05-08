@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoseAI — Real-Time Pose Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --warm-white: #FFFFFF;
+    --ink: #1A1714;
+    --ink-soft: #4A4540;
+    --ink-muted: #9A9490;
+    --sage: #4A7C59;
+    --sage-light: #E8F0EA;
+    --sage-mid: #B8D4BC;
+    --coral: #E8604C;
+    --coral-light: #FDF0EE;
+    --gold: #C9963A;
+    --gold-light: #FDF6E8;
+    --border: #E8E4DE;
+    --shadow-sm: 0 2px 8px rgba(26,23,20,0.06);
+    --shadow-md: 0 8px 32px rgba(26,23,20,0.10);
+    --shadow-lg: 0 24px 64px rgba(26,23,20,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(250,247,242,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .nav-logo-dot {
+    width: 8px; height: 8px;
+    background: var(--sage);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.7; }
+  }
+
+  .nav-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--sage);
+    background: var(--sage-light);
+    border: 1px solid var(--sage-mid);
+    padding: 4px 12px;
+    border-radius: 100px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 120px 48px 80px;
+    gap: 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative background blobs */
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(74,124,89,0.08) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,96,76,0.06) 0%, transparent 70%);
+    bottom: 0; left: 200px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .hero-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 24px;
+  }
+
+  .hero-label::before {
+    content: '';
+    display: block;
+    width: 28px; height: 2px;
+    background: var(--sage);
+    border-radius: 2px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--sage);
+    position: relative;
+  }
+
+  h1 em::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 4px; right: 0;
+    height: 3px;
+    background: var(--sage);
+    opacity: 0.25;
+    border-radius: 2px;
+  }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: 40px;
+    font-weight: 300;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 16px 32px;
+    border-radius: 100px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-download::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--sage);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: inherit;
+  }
+
+  .btn-download:hover::before { transform: translateY(0); }
+
+  .btn-download:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .btn-download span, .btn-download svg { position: relative; z-index: 1; }
+
+  .btn-download svg {
+    transition: transform 0.25s ease;
+  }
+
+  .btn-download:hover svg { transform: translateY(2px); }
+
+  .btn-secondary {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover { color: var(--ink); border-color: var(--ink); }
+
+  .apk-meta {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+  }
+
+  .apk-meta span { display: flex; align-items: center; gap: 5px; }
+
+  /* ── PHONE MOCKUP ── */
+  .hero-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .phone-frame {
+    width: 280px;
+    height: 560px;
+    background: var(--warm-white);
+    border-radius: 44px;
+    border: 3px solid var(--border);
+    box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255,255,255,0.8);
+    position: relative;
+    overflow: hidden;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(-1deg); }
+    50% { transform: translateY(-12px) rotate(1deg); }
+  }
+
+  .phone-notch {
+    position: absolute;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    width: 80px; height: 6px;
+    background: var(--border);
+    border-radius: 100px;
+    z-index: 10;
+  }
+
+  .phone-screen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #1A1714 0%, #2A2520 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .pose-figure {
+    width: 180px;
+    height: 280px;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  /* Skeleton stick figure */
+  .pose-figure svg {
+    width: 100%; height: 100%;
+    filter: drop-shadow(0 0 12px rgba(74,124,89,0.5));
+  }
+
+  .skeleton-line {
+    stroke: #00ff88;
+    stroke-width: 3;
+    stroke-linecap: round;
+    fill: none;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    animation: draw 1.5s ease forwards;
+  }
+
+  .skeleton-dot {
+    fill: #00ff88;
+    filter: drop-shadow(0 0 4px #00ff88);
+    opacity: 0;
+    animation: appear 0.3s ease forwards;
+  }
+
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  @keyframes appear {
+    to { opacity: 1; }
+  }
+
+  .phone-hud-top {
+    position: absolute;
+    top: 30px; left: 12px; right: 12px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+
+  .phone-tag {
+    background: rgba(74,124,89,0.25);
+    border: 1px solid rgba(74,124,89,0.4);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.62rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    color: #00ff88;
+    letter-spacing: 0.05em;
+  }
+
+  .phone-score {
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+  }
+
+  .phone-score-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #00ff88;
+    line-height: 1;
+  }
+
+  .phone-score-label {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .phone-feedback {
+    position: absolute;
+    bottom: 16px; left: 12px; right: 12px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .phone-feedback-label {
+    font-size: 0.5rem;
+    color: rgba(255,204,0,0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 4px;
+  }
+
+  .phone-feedback-text {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+
+  /* Decorative ring behind phone */
+  .phone-ring {
+    position: absolute;
+    width: 360px; height: 360px;
+    border: 1px dashed var(--sage-mid);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: spin-slow 30s linear infinite;
+    opacity: 0.5;
+  }
+
+  .phone-ring-2 {
+    position: absolute;
+    width: 440px; height: 440px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: spin-slow 45s linear infinite reverse;
+    opacity: 0.3;
+  }
+
+  @keyframes spin-slow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* ── FEATURES SECTION ── */
+  .features {
+    padding: 80px 48px;
+    background: var(--warm-white);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .section-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    background: var(--warm-white);
+    padding: 40px 36px;
+    transition: background 0.2s ease;
+    position: relative;
+  }
+
+  .feature-card:hover { background: var(--cream); }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+  }
+
+  .icon-green { background: var(--sage-light); }
+  .icon-coral { background: var(--coral-light); }
+  .icon-gold  { background: var(--gold-light); }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-desc {
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── STATS ── */
+  .stats {
+    padding: 80px 48px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-item {
+    padding: 40px 48px;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .stat-item:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-num span { color: var(--sage); }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how {
+    padding: 80px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .how-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    margin-top: 56px;
+    position: relative;
+  }
+
+  .how-steps::before {
+    content: '';
+    position: absolute;
+    top: 28px; left: calc(33.33% - 12px); right: calc(33.33% - 12px);
+    height: 1px;
+    background: linear-gradient(to right, var(--sage-mid), var(--border), var(--sage-mid));
+  }
+
+  .step-num {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 2px solid var(--sage-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--sage);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .step-desc {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── DOWNLOAD CTA ── */
+  .download-section {
+    padding: 80px 48px;
+    background: var(--ink);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .download-section::before {
+    content: '';
+    position: absolute;
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(74,124,89,0.15) 0%, transparent 65%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .download-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .download-section p {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 40px;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .btn-download-lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--sage);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 20px 44px;
+    border-radius: 100px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px rgba(74,124,89,0.35);
+    position: relative;
+  }
+
+  .btn-download-lg:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(74,124,89,0.45);
+    background: #5a9068;
+  }
+
+  .btn-download-lg svg { transition: transform 0.25s ease; }
+  .btn-download-lg:hover svg { transform: translateY(3px); }
+
+  .download-note {
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.3);
+    position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 32px 48px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--cream);
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .footer-copy {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+  }
+
+  .footer-tech {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+  }
+
+  .tech-pill {
+    padding: 4px 10px;
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; text-align: center; gap: 48px; }
+    .hero-label { justify-content: center; }
+    .hero-desc { margin: 0 auto 40px; }
+    .hero-actions { justify-content: center; }
+    .hero-visual { order: -1; }
+    .features { padding: 60px 24px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; padding: 40px 24px; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .stat-item:nth-child(2n) { border-right: none; }
+    .how { padding: 60px 24px; }
+    .how-steps { grid-template-columns: 1fr; gap: 32px; }
+    .how-steps::before { display: none; }
+    .download-section { padding: 60px 24px; }
+    footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px; }
+    .phone-ring, .phone-ring-2 { display: none; }
+  }
+
+  /* ── ENTRANCE ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .fade-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .delay-1 { transition-delay: 0.1s; }
+  .delay-2 { transition-delay: 0.2s; }
+  .delay-3 { transition-delay: 0.3s; }
+  .delay-4 { transition-delay: 0.4s; }
+  .delay-5 { transition-delay: 0.5s; }
+
+  /* Score counter animation */
+  @keyframes count-up {
+    from { content: "0"; }
+    to { content: "87"; }
+  }
+
+  /* Downloading state */
+  .btn-download.downloading,
+  .btn-download-lg.downloading {
+    pointer-events: none;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    PoseAI
+  </div>
+  <div class="nav-badge">Android App · v1.0</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-label fade-up visible">Real-Time AI · Computer Vision</div>
+    <h1 class="fade-up visible delay-1">
+      Pose<br><em>Detection</em><br>& Form Scoring
+    </h1>
+    <p class="hero-desc fade-up visible delay-2">
+      Your personal AI fitness coach. Get instant form feedback on yoga poses and bodyweight exercises — powered by MediaPipe and deep learning, running entirely on your phone.
+    </p>
+    <div class="hero-actions fade-up visible delay-3">
+      <a href="app-debug.apk" download="PoseAI.apk" class="btn-download" onclick="handleDownload(this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download APK</span>
+      </a>
+      <a href="#how-it-works" class="btn-secondary">
+        How it works
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+    <div class="apk-meta fade-up visible delay-4">
+      <span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        APK · 5.3 MB
+      </span>
+      <span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        Android 7.0+
+      </span>
+      <span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Debug Build
+      </span>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="phone-ring"></div>
+    <div class="phone-ring-2"></div>
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+
+        <div class="phone-hud-top">
+          <div class="phone-tag">WARRIOR II</div>
+          <div class="phone-score">
+            <div class="phone-score-val" id="score-display">87</div>
+            <div class="phone-score-label">FORM SCORE</div>
+          </div>
+        </div>
+
+        <!-- Skeleton figure SVG -->
+        <div class="pose-figure">
+          <svg viewBox="0 0 180 280" xmlns="http://www.w3.org/2000/svg">
+            <!-- Head -->
+            <circle cx="90" cy="28" r="14" fill="none" stroke="#00ff88" stroke-width="3" class="skeleton-line" style="stroke-dasharray:88;stroke-dashoffset:88;animation-delay:0.1s"/>
+
+            <!-- Neck to shoulder line -->
+            <line x1="90" y1="42" x2="90" y2="60" class="skeleton-line" style="animation-delay:0.2s"/>
+
+            <!-- Left arm (wide) -->
+            <line x1="90" y1="65" x2="30" y2="90" class="skeleton-line" style="animation-delay:0.3s"/>
+            <line x1="30" y1="90" x2="8" y2="115" class="skeleton-line" style="animation-delay:0.4s"/>
+
+            <!-- Right arm (wide) -->
+            <line x1="90" y1="65" x2="150" y2="90" class="skeleton-line" style="animation-delay:0.3s"/>
+            <line x1="150" y1="90" x2="172" y2="115" class="skeleton-line" style="animation-delay:0.4s"/>
+
+            <!-- Spine -->
+            <line x1="90" y1="60" x2="90" y2="145" class="skeleton-line" style="animation-delay:0.5s"/>
+
+            <!-- Hip line -->
+            <line x1="60" y1="145" x2="120" y2="145" class="skeleton-line" style="animation-delay:0.6s"/>
+
+            <!-- Left leg (front, bent) -->
+            <line x1="60" y1="145" x2="42" y2="210" class="skeleton-line" style="animation-delay:0.7s"/>
+            <line x1="42" y1="210" x2="28" y2="270" class="skeleton-line" style="animation-delay:0.8s"/>
+
+            <!-- Right leg (back, straight) -->
+            <line x1="120" y1="145" x2="138" y2="210" class="skeleton-line" style="animation-delay:0.7s"/>
+            <line x1="138" y1="210" x2="152" y2="270" class="skeleton-line" style="animation-delay:0.8s"/>
+
+            <!-- Joints -->
+            <circle cx="90" cy="65" r="5" class="skeleton-dot" style="animation-delay:0.5s"/>
+            <circle cx="30" cy="90" r="4" class="skeleton-dot" style="animation-delay:0.55s"/>
+            <circle cx="150" cy="90" r="4" class="skeleton-dot" style="animation-delay:0.55s"/>
+            <circle cx="8" cy="115" r="4" class="skeleton-dot" style="animation-delay:0.7s"/>
+            <circle cx="172" cy="115" r="4" class="skeleton-dot" style="animation-delay:0.7s"/>
+            <circle cx="90" cy="145" r="5" class="skeleton-dot" style="animation-delay:0.8s"/>
+            <circle cx="60" cy="145" r="4" class="skeleton-dot" style="animation-delay:0.85s"/>
+            <circle cx="120" cy="145" r="4" class="skeleton-dot" style="animation-delay:0.85s"/>
+            <circle cx="42" cy="210" r="4" class="skeleton-dot" style="animation-delay:0.95s"/>
+            <circle cx="138" cy="210" r="4" class="skeleton-dot" style="animation-delay:0.95s"/>
+            <circle cx="28" cy="270" r="4" class="skeleton-dot" style="animation-delay:1.05s"/>
+            <circle cx="152" cy="270" r="4" class="skeleton-dot" style="animation-delay:1.05s"/>
+          </svg>
+        </div>
+
+        <div class="phone-feedback">
+          <div class="phone-feedback-label">Feedback</div>
+          <div class="phone-feedback-text">✓ Good arm extension — keep arms parallel to floor</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stat-item fade-up">
+    <div class="stat-num">30<span>+</span></div>
+    <div class="stat-label">Poses & Exercises</div>
+  </div>
+  
+  <div class="stat-item fade-up delay-2">
+    <div class="stat-num">25<span>fps</span></div>
+    <div class="stat-label">Real-Time Processing</div>
+  </div>
+  <div class="stat-item fade-up delay-3">
+    <div class="stat-num">0<span>kb</span></div>
+    <div class="stat-label">Cloud Required</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-header fade-up">
+    <span class="section-eyebrow">What's Inside</span>
+    <h2 class="section-title">Everything your coach would tell you</h2>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card fade-up">
+      <div class="feature-icon icon-green">🧘</div>
+      <div class="feature-title">15 Yoga Asanas</div>
+      <div class="feature-desc">From Mountain Pose and Warrior I/II to advanced postures like Half Moon and Pigeon Pose — with detailed joint-by-joint guidance.</div>
+    </div>
+    <div class="feature-card fade-up delay-1">
+      <div class="feature-icon icon-coral">🏋️</div>
+      <div class="feature-title">15 Fitness Exercises</div>
+      <div class="feature-desc">Squats, push-ups, lunges, deadlifts and more. Rep counting with state-machine logic that tracks your full range of motion.</div>
+    </div>
+    <div class="feature-card fade-up delay-2">
+      <div class="feature-icon icon-gold">📊</div>
+      <div class="feature-title">Live Form Score</div>
+      <div class="feature-desc">A real-time score from 0–100 computed from 16 joint angles. See exactly which joints are off and get corrective cues instantly.</div>
+    </div>
+    <div class="feature-card fade-up delay-1">
+      <div class="feature-icon icon-coral">🤖</div>
+      <div class="feature-title">AI Auto-Detection</div>
+      <div class="feature-desc">The app identifies your pose automatically using a hybrid CNN + rule-based classifier with temporal smoothing across 15 frames.</div>
+    </div>
+    <div class="feature-card fade-up delay-2">
+      <div class="feature-icon icon-gold">📷</div>
+      <div class="feature-title">33-Point Skeleton</div>
+      <div class="feature-desc">MediaPipe Pose detects 33 full-body landmarks in 3D at 25–30 FPS. Green skeleton overlay shows your body alignment live.</div>
+    </div>
+    <div class="feature-card fade-up delay-3">
+      <div class="feature-icon icon-green">⚡</div>
+      <div class="feature-title">Runs On-Device</div>
+      <div class="feature-desc">No cloud, no servers, no lag. Everything runs in the browser via WebGL-accelerated TensorFlow.js and MediaPipe WASM.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how-it-works">
+  <div class="section-header fade-up">
+    <span class="section-eyebrow">The Pipeline</span>
+    <h2 class="section-title">How it works</h2>
+  </div>
+  <div class="how-steps">
+    <div class="fade-up">
+      <div class="step-num">01</div>
+      <div class="step-title">Camera Capture</div>
+      <div class="step-desc">Your phone camera streams live video. MediaPipe Pose detects 33 body landmarks every frame, giving x, y, z coordinates with confidence scores.</div>
+    </div>
+    <div class="fade-up delay-2">
+      <div class="step-num">02</div>
+      <div class="step-title">Angle & Feature Extraction</div>
+      <div class="step-desc">16 joint angles are computed from landmark triplets using vector math. Combined with 18 distances and 8 symmetry ratios into a 42-dimensional feature vector.</div>
+    </div>
+    <div class="fade-up delay-4">
+      <div class="step-num">03</div>
+      <div class="step-title">Score & Feedback</div>
+      <div class="step-desc">Each joint is compared to ideal reference angles. Deviations are scored 0–100. The top corrections are shown on screen in plain language, updated every frame.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD CTA -->
+<section class="download-section">
+  <h2 class="fade-up">Ready to try it?</h2>
+  <p class="fade-up delay-1">Download the APK, enable "Install from unknown sources" in your Android settings, and open the file to install.</p>
+  <a href="app-debug.apk" download="PoseAI.apk" class="btn-download-lg fade-up delay-2" onclick="handleDownload(this)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Download PoseAI.apk
+  </a>
+  <div class="download-note fade-up delay-3">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Android only · Enable "Install unknown apps" before installing · 5.3 MB
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="nav-logo-dot"></div>
+    PoseAI
+  </div>
+  <div class="footer-copy">Built with MediaPipe · TensorFlow.js · WebView</div>
+  <div class="footer-tech">
+    <span class="tech-pill">MediaPipe</span>
+    <span class="tech-pill">TF.js</span>
+    <span class="tech-pill">Android</span>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll-based fade-in ──────────────────────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-up').forEach(el => {
+    if (!el.classList.contains('visible')) observer.observe(el);
+  });
+
+  // ── Download handler ──────────────────────────────────────────
+  function handleDownload(btn) {
+    const originalText = btn.querySelector('span') ? btn.querySelector('span').textContent : btn.textContent;
+    btn.classList.add('downloading');
+
+    if (btn.querySelector('span')) {
+      btn.querySelector('span').textContent = 'Downloading...';
+    } else {
+      const textNode = [...btn.childNodes].find(n => n.nodeType === 3);
+      if (textNode) textNode.textContent = ' Downloading...';
+    }
+
+    setTimeout(() => {
+      btn.classList.remove('downloading');
+      if (btn.querySelector('span')) {
+        btn.querySelector('span').textContent = originalText;
+      }
+    }, 3000);
+  }
+
+  // ── Animated score counter in phone ──────────────────────────
+  function animateScore() {
+    const el = document.getElementById('score-display');
+    if (!el) return;
+    let start = 0;
+    const target = 87;
+    const duration = 1800;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(eased * target);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Start score animation after a short delay
+  setTimeout(animateScore, 800);
+
+  // ── Smooth scroll for anchor links ───────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>
