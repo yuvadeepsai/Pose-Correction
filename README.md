@@ -6,7 +6,7 @@ This repository contains a research project on **Pose Correction** developed as 
 
 ## Authors
 
-- **Yuvadeep Sai** (yuvadeepsai)
+- **Yuvadeep** (yuvadeepsai)
 - **Hitesh D.**
 
 ## Institution
