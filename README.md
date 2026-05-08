@@ -6,7 +6,7 @@ This repository contains a research project on **Pose Correction** developed as 
 
 ## Authors
 
-- **Yuva Deep Sai** (yuvadeepsai)
+- **Yuvadeep Sai** (yuvadeepsai)
 - **Hitesh D.**
 
 ## Institution
@@ -26,13 +26,10 @@ This project is a research formulation assignment aimed at developing and implem
 
 ### Technology Stack
 
-- **Jupyter Notebooks** (68.1%) - For research, experimentation, and documentation
-- **HTML** (31.9%) - For interactive visualizations and web-based presentations
+- **Jupyter Notebooks** - For research, experimentation, and documentation
+- **HTML** - For interactive visualizations and web-based presentations
 
-## Project Structure
 
-- **Jupyter Notebooks**: Contains the main research, data analysis, model training, and experimental results
-- **HTML Files**: Interactive visualizations and documentation web pages
 
 ## Getting Started
 
@@ -68,21 +65,12 @@ This project was developed as part of the Research Formulation course curriculum
 - Implementation and validation
 - Results analysis and documentation
 
-## Results & Findings
-
-[Add details about your findings, accuracy metrics, and results here]
-
-## Usage
-
-[Add instructions on how to use the pose correction system]
 
 ## Contributing
 
 This is an academic project. For any queries or contributions, please contact the authors.
 
-## License
 
-[Specify your license here - e.g., MIT, Apache 2.0, etc.]
 
 ## Acknowledgments
 
