@@ -165,46 +165,13 @@ Analysis → Feedback Generation → Visualization
 | Visualization & Dashboard | Week 4-5 | Planned | HTML pages, interactive visualizations |
 | Documentation & Report | Week 5-6 | In Progress | SDLC report, user documentation |
 
-### 5.2 Repository Structure
-```
-Pose-Correction/
-├── README.md                 # Project overview
-├── SDLC_REPORT.md           # This document
-├── notebooks/
-│   ├── data_exploration.ipynb
-│   ├── model_training.ipynb
-│   ├── pose_detection.ipynb
-│   └── analysis.ipynb
-├── data/
-│   ├── train/
-│   ├── test/
-│   └── validation/
-├── models/
-│   ├── pose_detector.h5
-│   └── weights/
-├── src/
-│   ├── preprocessing.py
-│   ├── model.py
-│   ├── analysis.py
-│   └── utils.py
-├── visualizations/
-│   ├── dashboard.html
-│   ├── results.html
-│   └── assets/
-├── results/
-│   ├── metrics.json
-│   ├── predictions/
-│   └── analysis_results/
-└── requirements.txt
-```
-
-### 5.3 Development Process
+### 5.2 Development Process
 - **Version Control**: Git (GitHub)
 - **Branching Strategy**: Main branch for stable code, feature branches for development
 - **Code Review**: Peer review before merge
 - **Documentation**: Inline comments and docstrings in code
 
-### 5.4 Commits & Progress Tracking
+### 5.3 Commits & Progress Tracking
 | Commit | Date | Message | Status |
 |--------|------|---------|--------|
 | 210e051 | 2026-05-08 | Initial repository setup | ✓ Complete |
